@@ -216,12 +216,50 @@ npm run dev
 
 ## Production Deployment
 
-For production deployment:
+### Docker Deployment (Local Testing)
+
+The application can be containerized using Docker for easy local testing and deployment.
+
+**Quick Start:**
+```bash
+# Using Docker Compose (Recommended)
+docker-compose up --build
+
+# Or using Docker directly
+docker build -t medical-translator:latest .
+docker run -d -p 3000:3000 --env-file .env.local medical-translator:latest
+```
+
+**For detailed Docker instructions, see [DOCKER.md](DOCKER.md)**
+
+### Google Cloud Platform Deployment
+
+Deploy to GCP Cloud Run for scalable, serverless hosting.
+
+**Quick Start:**
+```bash
+# Set your project ID
+export PROJECT_ID="your-project-id"
+
+# Build and deploy
+gcloud builds submit --tag gcr.io/$PROJECT_ID/medical-translator:latest
+gcloud run deploy medical-translator \
+  --image gcr.io/$PROJECT_ID/medical-translator:latest \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --port 3000
+```
+
+**For detailed GCP deployment instructions, see [GCP.md](GCP.md)**
+
+### Other Deployment Options
 
 1. **Secure API Keys**
    - Implement server-side API key management
    - Use temporary keys for client connections
    - Set up key rotation policies
+   - Use Secret Manager (GCP) or similar services
 
 2. **Optimize Performance**
    - Enable compression for audio streams
@@ -234,8 +272,10 @@ npm run build
 npm start
 ```
 
-4. **Deploy**
-   - Deploy to Vercel, AWS, Azure, or your preferred platform
+4. **Deploy to Other Platforms**
+   - **Vercel**: `vercel deploy`
+   - **AWS**: Use AWS App Runner or ECS
+   - **Azure**: Use Azure Container Apps
    - Configure environment variables on hosting platform
    - Set up SSL certificates for secure connections
 

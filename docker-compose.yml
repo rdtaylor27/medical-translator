@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  medical-translator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SONIOX_API_KEY=${NEXT_PUBLIC_SONIOX_API_KEY}
+    ports:
+      - "3001:3000"
+    environment:
+      # Soniox API Configuration
+      - NEXT_PUBLIC_SONIOX_API_KEY=${NEXT_PUBLIC_SONIOX_API_KEY}
+      - SONIOX_API_KEY=${SONIOX_API_KEY}
+      # Azure Speech Services Configuration
+      - AZURE_SPEECH_KEY=${AZURE_SPEECH_KEY}
+      - AZURE_SPEECH_REGION=${AZURE_SPEECH_REGION}
+    env_file:
+      - .env.local
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

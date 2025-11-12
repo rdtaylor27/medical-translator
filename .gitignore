@@ -25,6 +25,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+# Note: .env is created from .env.local for docker-compose, but should not be committed
 
 # vercel
 .vercel
@@ -35,3 +36,6 @@ next-env.d.ts
 
 # windows reserved names
 nul
+
+# deployment temporary files
+cloudbuild.temp.yaml

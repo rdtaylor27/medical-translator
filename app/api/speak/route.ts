@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Starting speech synthesis...');
 
-    return new Promise((resolve) => {
+    return new Promise<NextResponse>((resolve) => {
       synthesizer.speakTextAsync(
         text,
         (result) => {
