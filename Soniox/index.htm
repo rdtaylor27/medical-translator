@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soniox Real-time Transcription</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #recordBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        #recordBtn:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+        
+        #recordBtn.recording {
+            background-color: #f44336;
+        }
+        
+        #recordBtn.recording:hover {
+            background-color: #da190b;
+        }
+        
+        #recordBtn.starting {
+            background-color: #ff9800;
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        
+        .transcript-container {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #fafafa;
+        }
+        
+        .transcript-text {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #333;
+        }
+        
+        .transcript-final {
+            color: #333;
+        }
+        
+        .transcript-partial {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .recording-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #f44336;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        
+        .info-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .transcript-line { margin-bottom: 10px; }
+        .transcript-time { font-size: 14px; font-weight: 600; margin-right: 4px; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Soniox Real-time Transcription</h1>
+        
+        <div class="info-box">
+            <strong>Real-time Transcription:</strong> This demo uses Soniox's real-time WebSocket API for continuous speech-to-text transcription. 
+            Text appears as you speak with both partial (gray) and final (black) results.
+        </div>
+        
+        <div class="controls">
+            <button id="recordBtn">Start Recording</button>
+            <button id="clearBtn">Clear Transcript</button>
+        </div>
+        
+        <div id="status" class="status">
+            Press "Start Recording" to begin
+        </div>
+        
+        <h3>Transcript:</h3>
+        <div id="transcriptContainer" class="transcript-container">
+            <div id="partialLine" class="transcript-text">
+                <span id="partialText" class="transcript-partial"></span>
+            </div>
+        </div>
+        
+        <div id="error" style="display: none;" class="error"></div>
+    </div>
+
+    <script type="module">
+        // Import Soniox STT Web Library
+        import { RecordTranscribe } from "https://unpkg.com/@soniox/speech-to-text-web?module";
+        
+        // Configuration
+        const SERVER_URL = '/Soniox/TranscriptionHandler.ashx'; // Update this to your server endpoint
+        
+        // DOM elements
+        const recordBtn = document.getElementById('recordBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusDiv = document.getElementById('status');
+        const transcriptContainer = document.getElementById('transcriptContainer');
+        const partialTextSpan = document.getElementById('partialText');
+        const partialLineDiv = document.getElementById('partialLine');
+        const errorDiv = document.getElementById('error');
+        
+        let recordTranscribe;
+        let recordTranscribeState = "stopped"; // "stopped" | "starting" | "running" | "stopping"
+        let currentFinalizedText = ""; // Text that has been put into a segment
+        let potentialSegmentText = ""; // Buffer for building a complete sentence from final fragments
+        let currentSegmentStartTime = null;
+        let recordStartTimeSec = 0;
+        let createdSegments = new Set(); // Track which segments we've already created
+
+        // Get temporary API key from server
+        async function getTemporaryApiKey() {
+            try {
+                const response = await fetch(SERVER_URL);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to get temporary API key');
+                }
+                
+                return data.api_key;
+            } catch (error) {
+                throw new Error('Error fetching temporary API key: ' + error.message);
+            }
+        }
+
+        // Start/stop recording
+        recordBtn.addEventListener('click', async () => {
+            if (recordTranscribeState === "stopped") {
+                await startRecording();
+            } else if (recordTranscribeState === "running") {
+                stopRecording();
+            }
+        });
+        
+        // Clear transcript
+        clearBtn.addEventListener('click', () => {
+            currentFinalizedText = "";
+            potentialSegmentText = "";
+            createdSegments.clear();
+            transcriptContainer.innerHTML = "";
+            // re-attach the partial line so we keep showing in-progress text
+            transcriptContainer.appendChild(partialLineDiv);
+            partialTextSpan.textContent = "";
+            hideError();
+        });
+
+        async function startRecording() {
+            try {
+                // Reset UI
+                currentFinalizedText = "";
+                potentialSegmentText = "";
+                createdSegments.clear();
+                transcriptContainer.innerHTML = "";
+                transcriptContainer.appendChild(partialLineDiv);
+                partialTextSpan.textContent = "";
+                hideError();
+                
+                recordBtn.textContent = "Starting...";
+                recordBtn.classList.add('starting');
+                recordTranscribeState = "starting";
+                statusDiv.textContent = "Getting API key...";
+
+                // Get temporary API key from server
+                const temporaryApiKey = await getTemporaryApiKey();
+                
+                if (!temporaryApiKey) {
+                    throw new Error("Failed to obtain temporary API key");
+                }
+
+                statusDiv.textContent = "Connecting to Soniox...";
+
+                // Create new instance of RecordTranscribe class
+                recordTranscribe = new RecordTranscribe({
+                    apiKey: temporaryApiKey
+                });
+
+                // Start transcribing with callbacks
+                recordTranscribe.start({
+                    model: "stt-rt-preview",
+                    languageHints: ["en"],
+                    onStarted: () => {
+                        // Library connected to Soniox STT WebSocket API and is transcribing
+                        recordTranscribeState = "running";
+                        recordBtn.textContent = "Stop Recording";
+                        recordBtn.classList.remove('starting');
+                        recordBtn.classList.add('recording');
+                        recordStartTimeSec = Date.now() / 1000;
+                        statusDiv.innerHTML = 'Recording... <span class="recording-indicator"></span>';
+                    },
+                    onPartialResult: (result) => {
+                        const tokens = result.tokens;
+                        let newFinalTextFragment = ""; // Final text from *this* result (can be a fragment)
+                        let partialText = "";
+
+                        for (let token of tokens) {
+                            if (token.is_final) {
+                                newFinalTextFragment += token.text;
+                            } else {
+                                partialText += token.text;
+                            }
+                        }
+
+                        console.log('New final text fragment this result:', newFinalTextFragment);
+                        console.log('Partial text this result:', partialText);
+
+                        if (newFinalTextFragment.trim().length > 0) {
+                            potentialSegmentText += newFinalTextFragment;
+                            console.log('Potential segment text now:', potentialSegmentText);
+
+                            // Check if the potential segment seems complete (ends with punctuation)
+                            if (/[.!?]$/.test(potentialSegmentText.trim())) {
+                                const sentenceToFinalize = potentialSegmentText.trim();
+                                if (sentenceToFinalize.length > 10 && !createdSegments.has(sentenceToFinalize)) {
+                                    if (currentSegmentStartTime === null) {
+                                        // Estimate start time if this is the first part of a new sentence
+                                        currentSegmentStartTime = Date.now() / 1000 - recordStartTimeSec - (sentenceToFinalize.length / 15); // Rough estimate
+                                    }
+                                    const segmentEndTime = Date.now() / 1000 - recordStartTimeSec;
+                                    appendFinalSegment(currentSegmentStartTime, segmentEndTime, sentenceToFinalize);
+                                    
+                                    currentFinalizedText += sentenceToFinalize + " "; // Add with a space
+                                    potentialSegmentText = ""; // Reset buffer
+                                    currentSegmentStartTime = null; // Reset for next sentence
+                                    console.log('Segment created. Finalized text now:', currentFinalizedText);
+                                } else if (createdSegments.has(sentenceToFinalize)){
+                                    console.log('Segment already created, resetting potential:', sentenceToFinalize)
+                                    potentialSegmentText = ""; // Reset if it was a duplicate somehow
+                                }
+                            }
+                        }
+
+                        // Display the sentence being built from final fragments, plus current partials
+                        const liveDisplayText = (potentialSegmentText + " " + partialText).trim();
+                        console.log('Displaying live text:', liveDisplayText);
+                        partialTextSpan.textContent = liveDisplayText;
+
+                        // Auto-scroll to bottom
+                        transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+                    },
+                    onFinished: () => {
+                        // Finalize any remaining text in the buffer
+                        if (potentialSegmentText.trim().length > 2) {
+                            const sentenceToFinalize = potentialSegmentText.trim();
+                             if (!createdSegments.has(sentenceToFinalize)) {
+                                const segmentEndTime = Date.now() / 1000 - recordStartTimeSec;
+                                const startTime = currentSegmentStartTime || Math.max(0, segmentEndTime - (sentenceToFinalize.length / 15));
+                                appendFinalSegment(startTime, segmentEndTime, sentenceToFinalize);
+                                console.log('Finalized remaining onFinished:', sentenceToFinalize);
+                            }
+                        }
+                        potentialSegmentText = "";
+                        currentSegmentStartTime = null;
+                        partialTextSpan.textContent = ""; // Clear partial display
+                        
+                        // Transcription finished, reset UI
+                        resetTrigger();
+                        statusDiv.textContent = "Recording stopped";
+                    },
+                    onError: (status, message) => {
+                        console.log("Soniox error occurred", status, message);
+                        showError(`Transcription error: ${message}`);
+                        resetTrigger();
+                    },
+                });
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                showError(error.message);
+                resetTrigger();
+            }
+        }
+
+        function stopRecording() {
+            if (recordTranscribeState === "running") {
+                recordBtn.textContent = "Stopping...";
+                recordTranscribeState = "stopping";
+                statusDiv.textContent = "Stopping recording...";
+                recordTranscribe.stop();
+            }
+        }
+
+        function resetTrigger() {
+            recordBtn.textContent = "Start Recording";
+            recordBtn.classList.remove('recording', 'starting');
+            recordTranscribeState = "stopped";
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                hideError();
+            }, 10000);
+        }
+        
+        function hideError() {
+            errorDiv.style.display = 'none';
+        }
+
+        // Check for browser support
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError('Your browser does not support audio recording. Please use a modern browser.');
+            recordBtn.disabled = true;
+        }
+
+        function formatTime(sec) {
+            if (sec == null) return "00:00";
+            const minutes = Math.floor(sec / 60);
+            const seconds = Math.floor(sec % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function appendFinalSegment(startSec, endSec, text) {
+            // Avoid creating duplicate segments
+            if (createdSegments.has(text)) {
+                return;
+            }
+            createdSegments.add(text);
+            
+            const lineDiv = document.createElement('div');
+            lineDiv.className = 'transcript-text transcript-line';
+            lineDiv.innerHTML = `<span class="transcript-time">[${formatTime(startSec)} to ${formatTime(endSec)}]: </span>${text}`;
+            transcriptContainer.insertBefore(lineDiv, partialLineDiv);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(npm init -y)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev)",
+      "Read(//c/Users/R300714/OneDrive - Altera Digital Health/Altera_Important/AzureTextToSpeech/**)",
+      "Bash(timeout:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm uninstall:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
