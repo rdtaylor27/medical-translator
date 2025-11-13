@@ -11,7 +11,8 @@
       "Bash(npm uninstall:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nAdd comprehensive mobile responsive design improvements\n\nOptimized the Medical Translator app for mobile devices with responsive\nTailwind CSS classes across all breakpoints (mobile, tablet, desktop).\n\nChanges include:\n- Responsive typography: Header scales from text-3xl to text-5xl\n- Adaptive padding and spacing: Reduced on mobile, full on desktop\n- Compact buttons: Smaller on mobile (px-4 py-2.5) to full size (px-8 py-3.5)\n- Optimized language selectors with smaller fonts and spacing on mobile\n- Responsive transcript panels: 400px height on mobile to 600px on desktop\n- Improved touch targets and visual hierarchy for mobile users\n\nBreakpoints: sm (640px), md (768px), lg (1024px)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
