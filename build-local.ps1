@@ -1,5 +1,5 @@
-# Local Docker deployment script for PowerShell
-# This script builds and runs the Docker container with proper build arguments
+# Local Docker build script for PowerShell (build only, no run)
+# Use this when you only want to build the image without running it
 
 Write-Host "Loading environment variables from .env.local..." -ForegroundColor Yellow
 
@@ -29,34 +29,15 @@ docker build `
   --build-arg NEXT_PUBLIC_SONIOX_API_KEY="$env:NEXT_PUBLIC_SONIOX_API_KEY" `
   -t medical-translator:latest .
 
-if ($LASTEXITCODE -ne 0) {
+if ($LASTEXITCODE -eq 0) {
+    Write-Host ""
+    Write-Host "✓ Build completed successfully!" -ForegroundColor Green
+    Write-Host "Image: medical-translator:latest" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "To run the container:" -ForegroundColor Yellow
+    Write-Host "  docker run -d -p 3000:3000 --env-file .env.local --name medical-translator medical-translator:latest" -ForegroundColor White
+} else {
     Write-Host "Build failed!" -ForegroundColor Red
     exit 1
 }
-
-Write-Host "Stopping existing container (if any)..." -ForegroundColor Yellow
-docker stop medical-translator 2>$null
-docker rm medical-translator 2>$null
-
-Write-Host "Starting container..." -ForegroundColor Green
-docker run -d `
-  --name medical-translator `
-  -p 3000:3000 `
-  --env-file .env.local `
-  medical-translator:latest
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to start container!" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host ""
-Write-Host "✓ Container started successfully!" -ForegroundColor Green
-Write-Host "Access the app at: http://localhost:3000" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Useful commands:" -ForegroundColor Yellow
-Write-Host "  View logs:    docker logs -f medical-translator" -ForegroundColor White
-Write-Host "  Stop:        docker stop medical-translator" -ForegroundColor White
-Write-Host "  Remove:      docker rm medical-translator" -ForegroundColor White
-Write-Host "  Restart:     docker restart medical-translator" -ForegroundColor White
 

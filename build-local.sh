@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Local Docker deployment script
-# This script builds and runs the Docker container with proper build arguments
+# Local Docker build script (build only, no run)
+# Use this when you only want to build the image without running it
 
 set -e
 
@@ -27,24 +27,10 @@ docker build \
   --build-arg NEXT_PUBLIC_SONIOX_API_KEY="$NEXT_PUBLIC_SONIOX_API_KEY" \
   -t medical-translator:latest .
 
-echo "Stopping existing container (if any)..."
-docker stop medical-translator 2>/dev/null || true
-docker rm medical-translator 2>/dev/null || true
-
-echo "Starting container..."
-docker run -d \
-  --name medical-translator \
-  -p 3000:3000 \
-  --env-file .env.local \
-  medical-translator:latest
-
 echo ""
-echo "✓ Container started successfully!"
-echo "Access the app at: http://localhost:3000"
+echo "✓ Build completed successfully!"
+echo "Image: medical-translator:latest"
 echo ""
-echo "Useful commands:"
-echo "  View logs:    docker logs -f medical-translator"
-echo "  Stop:         docker stop medical-translator"
-echo "  Remove:       docker rm medical-translator"
-echo "  Restart:      docker restart medical-translator"
+echo "To run the container:"
+echo "  docker run -d -p 3000:3000 --env-file .env.local --name medical-translator medical-translator:latest"
 

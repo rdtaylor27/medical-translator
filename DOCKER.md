@@ -67,7 +67,9 @@ docker stop medical-translator
 docker rm medical-translator
 ```
 
-### Option 3: Using Deployment Scripts
+### Option 3: Using Deployment Scripts (Recommended)
+
+The deployment scripts automatically load environment variables from `.env.local` and pass build arguments correctly.
 
 **Windows (PowerShell):**
 ```powershell
@@ -78,6 +80,16 @@ docker rm medical-translator
 ```bash
 chmod +x deploy-local.sh
 ./deploy-local.sh
+```
+
+**Build Only (without running):**
+```powershell
+# Windows
+.\build-local.ps1
+
+# Linux/Mac
+chmod +x build-local.sh
+./build-local.sh
 ```
 
 ## Testing the Deployment

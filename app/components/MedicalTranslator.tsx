@@ -722,20 +722,20 @@ export default function MedicalTranslator() {
         <div className="absolute -bottom-40 right-1/3 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-8">
+      <div className="relative z-10 container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-semibold mb-3 text-slate-900 tracking-tight">
+        <div className="text-center mb-4 sm:mb-10">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold mb-2 sm:mb-3 text-slate-900 tracking-tight">
             Universal Medical Translator
           </h1>
-          <p className="text-base text-slate-600 font-medium">
+          <p className="text-sm sm:text-base text-slate-600 font-medium">
             Real-Time Language Interpretation System
           </p>
         </div>
 
         {/* Control Panel */}
-        <div className="bg-white/40 backdrop-blur-xl border border-white/50 rounded-3xl p-8 mb-8 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)]">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white/40 backdrop-blur-xl border border-white/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-4 sm:mb-8 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <LanguageSelector
               label="Provider Language"
               selectedLanguage={config.providerLanguage}
@@ -780,13 +780,13 @@ export default function MedicalTranslator() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap justify-center items-center gap-4 mt-8">
+          <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3 md:gap-4 mt-4 sm:mt-6 md:mt-8">
             {!isActive ? (
               <>
                 <button
                   onClick={startProviderSpeaking}
                   disabled={isConnecting}
-                  className="px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none backdrop-blur-sm border border-white/20"
+                  className="px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none backdrop-blur-sm border border-white/20"
                 >
                   {isConnecting && currentSpeaker === 'provider' ? 'Connecting...' : 'Provider Speaking'}
                 </button>
@@ -794,7 +794,7 @@ export default function MedicalTranslator() {
                 <button
                   onClick={startPatientSpeaking}
                   disabled={isConnecting}
-                  className="px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none backdrop-blur-sm border border-white/20"
+                  className="px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none backdrop-blur-sm border border-white/20"
                 >
                   {isConnecting && currentSpeaker === 'patient' ? 'Connecting...' : 'Patient Speaking'}
                 </button>
@@ -803,18 +803,18 @@ export default function MedicalTranslator() {
               <>
                 <button
                   onClick={() => switchSpeaker('provider')}
-                  className={`px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg backdrop-blur-sm border ${
+                  className={`px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg backdrop-blur-sm border ${
                     currentSpeaker === 'provider'
                       ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-blue-500/30 scale-[1.02] border-white/30'
                       : 'bg-white/30 text-blue-600 hover:bg-white/40 border-white/40'
                   }`}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
                     {currentSpeaker === 'provider' && !wsConnected && (
-                      <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shadow-lg shadow-amber-400/50"></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-amber-400 rounded-full animate-pulse shadow-lg shadow-amber-400/50"></div>
                     )}
                     {currentSpeaker === 'provider' && wsConnected && (
-                      <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400/50"></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400/50"></div>
                     )}
                     <span>Provider Speaking</span>
                   </div>
@@ -822,18 +822,18 @@ export default function MedicalTranslator() {
 
                 <button
                   onClick={() => switchSpeaker('patient')}
-                  className={`px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg backdrop-blur-sm border ${
+                  className={`px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg backdrop-blur-sm border ${
                     currentSpeaker === 'patient'
                       ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-purple-500/30 scale-[1.02] border-white/30'
                       : 'bg-white/30 text-purple-600 hover:bg-white/40 border-white/40'
                   }`}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
                     {currentSpeaker === 'patient' && !wsConnected && (
-                      <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shadow-lg shadow-amber-400/50"></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-amber-400 rounded-full animate-pulse shadow-lg shadow-amber-400/50"></div>
                     )}
                     {currentSpeaker === 'patient' && wsConnected && (
-                      <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400/50"></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400/50"></div>
                     )}
                     <span>Patient Speaking</span>
                   </div>
@@ -841,7 +841,7 @@ export default function MedicalTranslator() {
 
                 <button
                   onClick={stopRecording}
-                  className="px-8 py-3.5 rounded-2xl font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white backdrop-blur-sm border border-white/20"
+                  className="px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white backdrop-blur-sm border border-white/20"
                 >
                   Stop
                 </button>
@@ -850,7 +850,7 @@ export default function MedicalTranslator() {
 
             <button
               onClick={clearTranscripts}
-              className="px-6 py-3.5 rounded-2xl font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg bg-white/40 hover:bg-white/50 text-slate-700 backdrop-blur-sm border border-white/40"
+              className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 md:py-3.5 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg bg-white/40 hover:bg-white/50 text-slate-700 backdrop-blur-sm border border-white/40"
             >
               Clear
             </button>
@@ -858,8 +858,8 @@ export default function MedicalTranslator() {
         </div>
 
         {/* Transcript Panels */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white/40 backdrop-blur-xl border border-white/50 rounded-3xl p-6 h-[600px] shadow-[0_8px_32px_0_rgba(31,38,135,0.15)]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="bg-white/40 backdrop-blur-xl border border-white/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 h-[400px] sm:h-[500px] lg:h-[600px] shadow-[0_8px_32px_0_rgba(31,38,135,0.15)]">
             <TranscriptDisplay
               entries={transcripts}
               speaker="provider"
@@ -868,7 +868,7 @@ export default function MedicalTranslator() {
             />
           </div>
 
-          <div className="bg-white/40 backdrop-blur-xl border border-white/50 rounded-3xl p-6 h-[600px] shadow-[0_8px_32px_0_rgba(31,38,135,0.15)]">
+          <div className="bg-white/40 backdrop-blur-xl border border-white/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 h-[400px] sm:h-[500px] lg:h-[600px] shadow-[0_8px_32px_0_rgba(31,38,135,0.15)]">
             <TranscriptDisplay
               entries={transcripts}
               speaker="patient"
