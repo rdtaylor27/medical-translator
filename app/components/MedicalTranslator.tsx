@@ -15,6 +15,7 @@ interface SpeakerBuffer {
   createdSegments: Set<string>;
   lastUpdateTime: number;
   pendingTimeout: NodeJS.Timeout | null;
+  hasSourceSinceReset: boolean;
 }
 
 const createInitialBuffer = (): SpeakerBuffer => ({
@@ -25,6 +26,7 @@ const createInitialBuffer = (): SpeakerBuffer => ({
   createdSegments: new Set(),
   lastUpdateTime: 0,
   pendingTimeout: null,
+  hasSourceSinceReset: false,
 });
 
 const isNonEmptyString = (value: any): value is string =>
@@ -275,7 +277,7 @@ export default function MedicalTranslator() {
       } else {
         console.log('Sending WebSocket config for speaker:', speaker, 'languageHints:', [sourceLanguage], '(no translation)');
       }
-      
+
       ws.send(JSON.stringify(configMessage));
     };
 
@@ -310,53 +312,55 @@ export default function MedicalTranslator() {
         let finalTranslatedAppend = '';
         let partialOriginalCurrent = '';
         let partialTranslatedCurrent = '';
+        let sawSourceToken = false;
 
+        // Soniox sends source and target language tokens separately
+        // Source = original speech, Target = translation
         for (const token of tokens) {
           const tokenLanguage = extractCandidateLanguage(token);
           const tokenText = typeof token.text === 'string' ? token.text : '';
+          const translationStatus =
+            typeof token?.translation_status === 'string'
+              ? token.translation_status.toLowerCase()
+              : '';
+          const isTranslationToken =
+            tokenLanguage === normalizedTarget ||
+            translationStatus.includes('translation');
+          const isLikelySourceToken =
+            tokenLanguage === normalizedSource || (!tokenLanguage && !isTranslationToken);
 
-          let resolvedSourceText = '';
-          let resolvedTargetText = '';
+          if (!tokenText) continue;
 
-          if (!tokenLanguage || tokenLanguage === normalizedSource) {
-            if (tokenText && (!tokenLanguage || tokenLanguage === normalizedSource)) {
-              resolvedSourceText = tokenText;
+          const hasMeaningfulText = tokenText.trim().length > 0;
+
+          // Accept source language tokens OR untagged tokens that aren't marked as translations
+          if (isLikelySourceToken) {
+            if (token.is_final) {
+              finalOriginalAppend += tokenText;
+            } else {
+              partialOriginalCurrent += tokenText;
+            }
+            if (hasMeaningfulText) {
+              sawSourceToken = true;
             }
           }
-
-          if (tokenLanguage === normalizedTarget && tokenText) {
-            resolvedTargetText = tokenText;
-          }
-
-          if (!resolvedSourceText && tokenLanguage !== normalizedTarget) {
-            const candidate = findTextForLanguage(token, sourceLanguageCode, normalizedTarget);
-            if (candidate) {
-              resolvedSourceText = candidate;
+          // Accept target language tokens ONLY if they come WITH source tokens
+          // (translations from Soniox, not wrong-language speech)
+          else if (isTranslationToken) {
+            const hasSourceContext = buffer.hasSourceSinceReset || sawSourceToken;
+            if (!hasSourceContext) {
+              continue;
+            }
+            if (token.is_final) {
+              finalTranslatedAppend += tokenText;
+            } else {
+              partialTranslatedCurrent += tokenText;
             }
           }
+        }
 
-          if (!resolvedTargetText) {
-            const candidate = findTextForLanguage(token, targetLanguageCode);
-            if (candidate) {
-              resolvedTargetText = candidate;
-            }
-          }
-
-          if (token.is_final) {
-            if (resolvedSourceText) {
-              finalOriginalAppend += resolvedSourceText;
-            }
-            if (resolvedTargetText) {
-              finalTranslatedAppend += resolvedTargetText;
-            }
-          } else {
-            if (resolvedSourceText) {
-              partialOriginalCurrent += resolvedSourceText;
-            }
-            if (resolvedTargetText) {
-              partialTranslatedCurrent += resolvedTargetText;
-            }
-          }
+        if (sawSourceToken) {
+          buffer.hasSourceSinceReset = true;
         }
 
         // Append new final text fragments to the buffer
@@ -368,7 +372,7 @@ export default function MedicalTranslator() {
           buffer.finalTranslated += finalTranslatedAppend;
           buffer.lastUpdateTime = Date.now();
         }
-        
+
         // Update partial text (replaces, doesn't append)
         buffer.partialOriginal = partialOriginalCurrent;
         buffer.partialTranslated = partialTranslatedCurrent;
@@ -390,15 +394,19 @@ export default function MedicalTranslator() {
           const committedOriginal = buffer.finalOriginal.trim();
           const committedTranslated = buffer.finalTranslated.trim();
 
-          // Must have BOTH original AND translated content, and must be a minimum length
-          if (committedOriginal.length > 10 && committedTranslated.length > 10) {
+          // Must have BOTH original AND translated content with meaningful length
+          // This ensures we only show properly translated conversations
+          const hasValidTranslation =
+            committedOriginal.length > 5 && committedTranslated.length > 5;
+
+          if (hasValidTranslation) {
             // Set a timeout to finalize after 1 second of no new text
             buffer.pendingTimeout = setTimeout(() => {
               const segmentKey = `${committedOriginal}|${committedTranslated}`;
-              
+
               if (!buffer.createdSegments.has(segmentKey)) {
                 buffer.createdSegments.add(segmentKey);
-                
+
                 const entry: TranscriptEntry = {
                   id: `${Date.now()}-${Math.random()}`,
                   speaker,
@@ -421,6 +429,9 @@ export default function MedicalTranslator() {
                 // Clear buffers after creating entry
                 buffer.finalOriginal = '';
                 buffer.finalTranslated = '';
+                buffer.partialOriginal = '';
+                buffer.partialTranslated = '';
+                buffer.hasSourceSinceReset = false;
                 buffer.pendingTimeout = null;
               }
             }, 1000); // Wait 1 second before finalizing

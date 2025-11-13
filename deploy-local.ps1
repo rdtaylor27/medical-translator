@@ -41,7 +41,7 @@ docker rm medical-translator 2>$null
 Write-Host "Starting container..." -ForegroundColor Green
 docker run -d `
   --name medical-translator `
-  -p 3000:3000 `
+  -p 3004:3000 `
   --env-file .env.local `
   medical-translator:latest
 
@@ -51,8 +51,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "✓ Container started successfully!" -ForegroundColor Green
-Write-Host "Access the app at: http://localhost:3000" -ForegroundColor Cyan
+Write-Host "Container started successfully!" -ForegroundColor Green
+Write-Host "Access the app at: http://localhost:3004" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Useful commands:" -ForegroundColor Yellow
 Write-Host "  View logs:    docker logs -f medical-translator" -ForegroundColor White
